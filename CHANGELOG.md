@@ -5,6 +5,12 @@ All notable changes to Mobily are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- `apk:build` and `apk:install` now use a standalone Gradle release APK. The debug APK they produced needed a running Metro server, and opened in the Expo development launcher.
+- `apk:build` regenerates the native Android project, so the APK version name follows `app.json`.
 
 ## [0.1.3] - 2026-08-05
 
