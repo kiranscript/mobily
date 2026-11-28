@@ -9,12 +9,14 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Linux jobs are pinned to ubuntu-24.04. On 26.04, Playwright 1.51 cannot install
+# Chromium and the tmux Session Snapshot test reports a different cursor blink.
 jobs:
   # ---------------------------------------------------------------------------
   # Path filters — skip expensive jobs when unrelated paths change
   # ---------------------------------------------------------------------------
   changes:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       android_browser: ${{ steps.filter.outputs.android_browser }}
       pty: ${{ steps.filter.outputs.pty }}
@@ -49,7 +51,7 @@ jobs:
   # Playwright browser tests run in android-browser when those paths change.
   # ---------------------------------------------------------------------------
   ci:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -72,7 +74,7 @@ jobs:
   android-browser:
     needs: changes
     if: needs.changes.outputs.android_browser == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
