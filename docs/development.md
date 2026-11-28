@@ -58,7 +58,10 @@ flags: `--devtunnels-provider github|microsoft`, `--verbose`, `--session <name>`
 pnpm --filter mobily-android android
 ```
 
-Scan the CLI QR from the app pair screen.
+Scan the CLI QR from the app pair screen. This is a development build, so load
+the app from Metro first. The Expo development launcher cannot read the Station
+QR (`mobily://pair?…`) and fails with
+`Expected URL scheme 'http' or 'https' but was 'mobily'`.
 
 For starting, checking, stopping, and troubleshooting the local Android
 emulator, see [`android-emulator.md`](android-emulator.md).
@@ -97,7 +100,7 @@ asset) together. Example: [v0.1.3](https://github.com/kirank55/mobily/releases/t
 5. Tag push runs [`.github/workflows/release.yml`](../.github/workflows/release.yml)
    (needs `NPM_TOKEN`): build CLI → `npm publish` → create the GitHub Release
    `vX.Y.Z` with install notes. The workflow does **not** build or upload an APK.
-6. Build and attach the Gradle debug APK to that same release (see below).
+6. Build and attach the Gradle release APK to that same release (see below).
 7. Smoke: `npm view mobily version` / `npx mobily@X.Y.Z --version`, and install
    the APK from the release page.
 
@@ -112,20 +115,27 @@ cd cli && npm pack --dry-run
 ### Android APK asset
 
 No Play Store listing. Attach one APK to the **`vX.Y.Z`** release (not a separate
-tag). Preferred build is local Gradle debug via the Android package scripts
-(requires a generated native tree under `android/android/` — run
-`pnpm --filter mobily-android prebuild` if missing):
+tag). It must be a **release** build: a debug build ships the Expo development
+launcher without the app's JavaScript, so it only works next to a running Metro
+server. Preferred build is local Gradle via the Android package scripts:
 
 ```bash
 pnpm --filter mobily-android apk:build
-# output: android/android/app/build/outputs/apk/debug/app-debug.apk
-cp android/android/app/build/outputs/apk/debug/app-debug.apk mobily-X.Y.Z.apk
+# output: android/android/app/build/outputs/apk/release/app-release.apk
+cp android/android/app/build/outputs/apk/release/app-release.apk mobily-X.Y.Z.apk
+unzip -l mobily-X.Y.Z.apk | grep assets/index.android.bundle # must match
 gh release upload vX.Y.Z mobily-X.Y.Z.apk --clobber
 rm mobily-X.Y.Z.apk   # do not commit the APK
 ```
 
-Asset naming convention: `mobily-X.Y.Z.apk`. Local install without uploading:
-`pnpm --filter mobily-android apk:install`.
+`apk:build` runs `expo prebuild` first, which recreates `android/android/` so the
+native version name follows `app.json`. Manual edits in that folder are lost.
+
+The APK is signed with the debug keystore from the Expo template. Android only
+installs an update over an existing app when both use the same signing key.
+
+Asset naming convention: `mobily-X.Y.Z.apk`. Local install of the release APK
+without uploading: `pnpm --filter mobily-android apk:install`.
 
 Optional alternative: EAS preview (`pnpm --filter mobily-android eas-prod`), then
 upload that artifact to the same `vX.Y.Z` release with the same filename.
